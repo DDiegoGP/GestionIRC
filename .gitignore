@@ -1,0 +1,31 @@
+# Archivos compilados
+*.exe
+*.zip
+build/
+dist/
+*.spec
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+
+# Datos y logs
+data/
+logs/
+exports/
+backups/
+
+# Credenciales
+config/service_account.json
+config/token.json
+credentials.json
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db

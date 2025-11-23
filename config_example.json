@@ -1,0 +1,24 @@
+{
+  "app_name": "Gestión IRC",
+  "app_version": "1.0.0",
+  "google_sheet_id": "TU_ID_DE_GOOGLE_SHEET_AQUI",
+  "worksheets": {
+    "requests": "Solicitudes",
+    "sessions": "Sesiones",
+    "config": "Configuracion"
+  },
+  "pdf_settings": {
+    "template_path": "",
+    "output_folder": "pdf_generados",
+    "auto_open": true
+  },
+  "ui_settings": {
+    "theme": "default",
+    "window_size": "1200x800",
+    "show_splash": true
+  },
+  "update_settings": {
+    "check_on_startup": true,
+    "update_url": ""
+  }
+}
