@@ -32,4 +32,5 @@ Thumbs.db
 
 service_account.json
 credentials.json
-*.env
+*.envapp_config.json
+config/app_config.json
