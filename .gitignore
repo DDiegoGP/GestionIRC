@@ -29,3 +29,7 @@ credentials.json
 # Sistema
 .DS_Store
 Thumbs.db
+
+service_account.json
+credentials.json
+*.env
