@@ -1,372 +1,243 @@
 """
-Script para generar el ejecutable de GestionIRC
-Incluye el logo del IRC como icono
+Script de compilación para Gestión IRC
+Genera el ejecutable de Windows con PyInstaller
 """
 import os
 import sys
+import shutil
+import subprocess
 from pathlib import Path
 
-def verificar_dependencias():
-    """Verifica que estén instaladas las dependencias necesarias"""
-    try:
-        import PyInstaller
-        print("✅ PyInstaller instalado")
-    except ImportError:
-        print("❌ PyInstaller no instalado")
-        print("   Instálalo con: pip install pyinstaller")
-        return False
+def limpiar_builds_anteriores():
+    """Limpia builds anteriores"""
+    print("🧹 Limpiando builds anteriores...")
     
-    try:
-        from PIL import Image
-        print("✅ Pillow instalado")
-    except ImportError:
-        print("❌ Pillow no instalado")
-        print("   Instálalo con: pip install pillow")
+    dirs_limpiar = ['build', 'dist']
+    for dir_name in dirs_limpiar:
+        if os.path.exists(dir_name):
+            shutil.rmtree(dir_name)
+            print(f"   ✓ Eliminado: {dir_name}/")
+    
+    print()
+
+def verificar_archivos_necesarios():
+    """Verifica que existen todos los archivos necesarios"""
+    print("🔍 Verificando archivos necesarios...")
+    
+    archivos_requeridos = [
+        'main.py',
+        'config/service_account.json',
+        'resources/irc_icon.ico',
+        'formularios/anexo_III_2025_V8.pdf',
+        'Gestion_IRC.spec'
+    ]
+    
+    faltantes = []
+    for archivo in archivos_requeridos:
+        if os.path.exists(archivo):
+            print(f"   ✓ {archivo}")
+        else:
+            print(f"   ✗ {archivo} - FALTA")
+            faltantes.append(archivo)
+    
+    # Verificar carpeta formularios
+    if os.path.exists('formularios') and os.path.isdir('formularios'):
+        print(f"   ✓ formularios/ (carpeta)")
+    else:
+        print(f"   ✗ formularios/ - FALTA")
+        faltantes.append('formularios/')
+    
+    print()
+    
+    if faltantes:
+        print("❌ Faltan archivos necesarios:")
+        for f in faltantes:
+            print(f"   - {f}")
         return False
     
     return True
 
-def convertir_logo_a_ico():
-    """Convierte el logo PNG a ICO para Windows"""
-    print("\n📝 Convirtiendo logo PNG a ICO...")
+def compilar():
+    """Compila el ejecutable con PyInstaller"""
+    print("🔨 Compilando con PyInstaller...")
+    print("   (Esto puede tardar 2-5 minutos...)")
+    print()
     
     try:
-        from PIL import Image
-        
-        # Rutas
-        png_path = Path("assets/logo-irc.png")
-        ico_path = Path("assets/logo-irc.ico")
-        
-        if not png_path.exists():
-            print(f"❌ No se encuentra {png_path}")
-            return False
-        
-        # Abrir imagen
-        img = Image.open(png_path)
-        
-        # Convertir a RGBA si no lo está
-        if img.mode != 'RGBA':
-            img = img.convert('RGBA')
-        
-        # Crear ICO con múltiples tamaños
-        # Windows usa diferentes tamaños según el contexto
-        img.save(
-            ico_path,
-            format='ICO',
-            sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+        # Ejecutar sin capturar salida para ver progreso en tiempo real
+        resultado = subprocess.run(
+            ['python', '-m', 'PyInstaller', 'Gestion_IRC.spec', '--clean'],
+            check=True
         )
         
-        print(f"✅ Logo convertido a {ico_path}")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error al convertir logo: {e}")
+        if resultado.returncode == 0:
+            print()
+            print("✅ Compilación exitosa!")
+            return True
+        else:
+            print()
+            print("❌ Error en la compilación")
+            return False
+            
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error al ejecutar PyInstaller: {e}")
+        return False
+    except FileNotFoundError:
+        print("❌ PyInstaller no está instalado.")
+        print("   Instálalo con: pip install pyinstaller")
+        print("   O verifica tu instalación de Python")
         return False
 
-def build_ejecutable():
-    """Genera el ejecutable con PyInstaller"""
-    print("\n🔨 Generando ejecutable...")
+def verificar_ejecutable():
+    """Verifica que el ejecutable se creó correctamente"""
+    print()
+    print("🔍 Verificando ejecutable...")
     
-    # Comando de PyInstaller
-    comando = [
-        'main.py',
-        '--name=GestionIRC',
-        '--icon=assets/logo-irc.ico',
-        '--onefile',              # Un solo archivo .exe
-        '--windowed',             # Sin consola
-        '--add-data=assets;assets',  # Incluir carpeta assets
-        '--hidden-import=PIL',
-        '--hidden-import=PIL._imagingtk',
-        '--hidden-import=PIL._tkinter_finder',
-        '--hidden-import=matplotlib',
-        '--hidden-import=matplotlib.backends.backend_tkagg',
-        '--hidden-import=gspread',
-        '--hidden-import=google.auth',
-        '--hidden-import=google.oauth2',
-        '--hidden-import=pdfplumber',
-        '--collect-all=matplotlib',
-        '--collect-all=PIL',
-        '--noupx',  # No usar UPX (a veces da problemas)
-        '--clean',  # Limpiar caché antes de build
-    ]
+    exe_path = Path('dist/GestionIRC.exe')
     
-    # Ejecutar PyInstaller
-    import PyInstaller.__main__
-    
-    try:
-        PyInstaller.__main__.run(comando)
-        print("\n✅ Ejecutable generado exitosamente!")
-        print("\n📂 El ejecutable está en: dist/GestionIRC.exe")
-        print("\n📝 Próximos pasos:")
-        print("   1. Prueba el ejecutable en dist/GestionIRC.exe")
-        print("   2. Para distribuir, copia:")
-        print("      - dist/GestionIRC.exe")
-        print("      - credentials/ (credenciales de Google)")
-        print("      - README_USUARIO.txt (instrucciones)")
+    if exe_path.exists():
+        size_mb = exe_path.stat().st_size / (1024 * 1024)
+        print(f"   ✓ Ejecutable creado: {exe_path}")
+        print(f"   ✓ Tamaño: {size_mb:.2f} MB")
         return True
-        
-    except Exception as e:
-        print(f"\n❌ Error al generar ejecutable: {e}")
+    else:
+        print(f"   ✗ No se encontró el ejecutable en {exe_path}")
         return False
 
-def crear_readme_distribucion():
-    """Crea el README para usuarios finales"""
-    print("\n📝 Creando README para distribución...")
+def crear_paquete_distribucion():
+    """Crea el paquete de distribución completo"""
+    print()
+    print("📦 Creando paquete de distribución...")
     
-    readme = """
-# GestionIRC - Instalación
+    # Crear carpeta de distribución
+    dist_folder = Path('dist/GestionIRC_v4.0')
+    dist_folder.mkdir(exist_ok=True)
+    
+    # Copiar ejecutable
+    shutil.copy('dist/GestionIRC.exe', dist_folder / 'GestionIRC.exe')
+    print("   ✓ Ejecutable copiado")
+    
+    # Crear carpetas necesarias
+    (dist_folder / 'data').mkdir(exist_ok=True)
+    (dist_folder / 'logs').mkdir(exist_ok=True)
+    (dist_folder / 'exports').mkdir(exist_ok=True)
+    (dist_folder / 'backups').mkdir(exist_ok=True)
+    print("   ✓ Carpetas de trabajo creadas")
+    
+    # Copiar carpeta config con service_account.json
+    if os.path.exists('config/service_account.json'):
+        (dist_folder / 'config').mkdir(exist_ok=True)
+        shutil.copy('config/service_account.json', dist_folder / 'config' / 'service_account.json')
+        print("   ✓ Credenciales de Google Sheets copiadas")
+    else:
+        print("   ⚠️  Advertencia: config/service_account.json no encontrado")
+    
+    # Copiar carpeta formularios con template PDF
+    if os.path.exists('formularios'):
+        shutil.copytree('formularios', dist_folder / 'formularios', dirs_exist_ok=True)
+        print("   ✓ Templates PDF copiados")
+    else:
+        print("   ⚠️  Advertencia: carpeta formularios/ no encontrada")
+    
+    # Crear README
+    readme_content = """# Gestión IRC - Universidad Complutense de Madrid
 
-## 📥 Archivos Necesarios
+## Instalación
 
-Para ejecutar GestionIRC necesitas:
+1. Extraer todos los archivos en una carpeta
+2. Ejecutar GestionIRC.exe
 
-```
-GestionIRC/
-├── GestionIRC.exe              ← Ejecutable principal
-├── credentials/
-│   └── service_account.json    ← Credenciales de Google
-└── README_USUARIO.txt          ← Este archivo
-```
+## Primer Uso
 
-## 🚀 Instalación
+Al abrir la aplicación por primera vez:
 
-### Primera Vez:
+1. Se abrirá la ventana de configuración automáticamente
+2. Introduce el ID del Google Sheets (proporcionado por el administrador)
+3. Las credenciales de acceso ya están incluidas en config/service_account.json
+4. Click en "Guardar" y la aplicación se conectará automáticamente
 
-1. **Copia la carpeta completa** a tu computadora
-   Ejemplo: `C:\\Usuarios\\TuNombre\\GestionIRC\\`
+## Estructura de Carpetas
 
-2. **Verifica las credenciales**:
-   - Abre la carpeta `credentials/`
-   - Asegúrate de que existe `service_account.json`
-   - Si no lo tienes, solicítalo al administrador
+- `config/` - Credenciales de Google Sheets (NO modificar)
+- `formularios/` - Templates de PDF para solicitudes
+- `data/` - Datos de configuración de la aplicación
+- `logs/` - Archivos de log del sistema
+- `exports/` - PDFs y reportes exportados
+- `backups/` - Copias de seguridad automáticas
 
-3. **Primera ejecución**:
-   - Doble click en `GestionIRC.exe`
-   - Se abrirá un asistente de configuración
-   - Introduce el ID de tu Google Sheet
-   - El programa guardará tu configuración
+## Requisitos
 
-### Ejecuciones Posteriores:
+- Windows 10 o superior
+- Conexión a Internet (para sincronización con Google Sheets)
 
-- Simplemente doble click en `GestionIRC.exe`
-- La configuración se carga automáticamente
+## Notas Importantes
 
-## 🔧 Configuración Inicial
+- NO elimines ni modifiques la carpeta config/
+- NO compartas el archivo service_account.json fuera de tu organización
+- Los datos se sincronizan automáticamente con Google Sheets
 
-En la primera ejecución, necesitarás:
+## Soporte
 
-### 1. ID de Google Sheet
-
-Es un texto largo como:
-```
-1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
-```
-
-**¿Dónde lo encuentro?**
-- Abre tu Google Sheet en el navegador
-- Mira la URL:
-  `https://docs.google.com/spreadsheets/d/[AQUÍ_ESTÁ_EL_ID]/edit`
-- Copia solo la parte del ID
-
-### 2. Archivo de Credenciales
-
-El archivo `service_account.json` debe estar en:
-```
-credentials/service_account.json
-```
-
-**Si no lo tienes**:
-1. Habla con el administrador del sistema
-2. Pídele que te proporcione el archivo
-3. Guárdalo en la carpeta `credentials/`
-
-## 📊 Uso del Programa
-
-### Pestañas Principales:
-
-1. **📋 Solicitudes**
-   - Ver y crear solicitudes de servicio
-   - Descargar PDFs
-   - Cambiar estados
-
-2. **🔬 Sesiones**
-   - Registrar sesiones de trabajo
-   - Ver calendario de actividades
-   - Seguir el progreso de cada servicio
-
-3. **📊 Dashboard**
-   - Vista general del estado
-   - Estadísticas y gráficos
-   - Alertas de servicios atrasados
-
-4. **⚙️ Configuración**
-   - Cambiar Google Sheet
-   - Actualizar credenciales
-   - Ver información del sistema
-
-### Flujo de Trabajo Típico:
-
-**1. Crear Solicitud**:
-   - Pestaña 📋 Solicitudes
-   - Click en "➕ Nueva Solicitud"
-   - Rellenar formulario
-   - Guardar
-
-**2. Descargar PDF**:
-   - En la tabla, selecciona la solicitud
-   - Click en "📄 Descargar PDF"
-   - Imprime y entrégala al cliente para firmar
-
-**3. Procesar PDF Firmado**:
-   - Cuando te devuelvan el PDF firmado
-   - Click en "📄" junto a la solicitud
-   - Click en "✅ Marcar como En Proceso"
-
-**4. Registrar Sesión**:
-   - Pestaña 🔬 Sesiones
-   - Click en "➕ Nueva Sesión"
-   - Selecciona la solicitud
-   - Rellena los datos de la sesión
-   - Guardar
-
-**5. Ver Progreso**:
-   - En 🔬 Sesiones, ve el panel "📊 Progreso"
-   - Verás el % completado de cada servicio
-   - Alertas si algo está atrasado
-
-## 🆘 Solución de Problemas
-
-### No se conecta a Google Sheets
-
-**Problema**: Sale error "No se pudo conectar"
-
-**Soluciones**:
-1. Verifica tu conexión a Internet
-2. Comprueba que `service_account.json` existe
-3. Asegúrate de que el ID de Sheet es correcto
-4. Habla con el administrador
-
-### El programa se cierra al abrirse
-
-**Problema**: Se abre y se cierra inmediatamente
-
-**Soluciones**:
-1. Abre una terminal (cmd)
-2. Navega a la carpeta: `cd C:\\ruta\\a\\GestionIRC`
-3. Ejecuta: `GestionIRC.exe`
-4. Lee el error que aparece
-5. Comunícaselo al administrador
-
-### Faltan datos en las tablas
-
-**Problema**: No veo todas las solicitudes/sesiones
-
-**Soluciones**:
-1. Click en "🔄 Actualizar"
-2. Cierra y abre el programa
-3. Verifica que estás conectado a Internet
-4. Pregunta al administrador si cambió la Sheet
-
-### No puedo crear nuevas solicitudes
-
-**Problema**: Sale error al guardar
-
-**Soluciones**:
-1. Verifica todos los campos requeridos
-2. Asegúrate de tener permisos en la Sheet
-3. Prueba con "🔄 Actualizar" primero
-4. Contacta al administrador
-
-## 📞 Soporte
-
-### Para Problemas Técnicos:
-
-Contacta al administrador del sistema con:
-1. Descripción del problema
-2. Captura de pantalla del error
-3. Qué estabas haciendo cuando ocurrió
-
-### Para Dudas de Uso:
-
-Consulta este manual o pregunta a tus compañeros.
-
-## 🔄 Actualizaciones
-
-Cuando haya una nueva versión:
-
-1. Descarga el nuevo `GestionIRC.exe`
-2. Cierra el programa actual
-3. Reemplaza el archivo .exe antiguo
-4. **NO borres** la carpeta `credentials/`
-5. Abre el nuevo ejecutable
-
-Tu configuración se mantendrá.
-
-## ✅ Checklist de Instalación
-
-- [ ] Tengo la carpeta GestionIRC completa
-- [ ] Existe credentials/service_account.json
-- [ ] Sé el ID de mi Google Sheet
-- [ ] Puedo ejecutar GestionIRC.exe
-- [ ] Completé la configuración inicial
-- [ ] Puedo ver las pestañas principales
-- [ ] Puedo crear una solicitud de prueba
-
-Si todos los checks están ✅, ¡estás listo! 🚀
+Para soporte técnico o problemas, contacta con el administrador del sistema.
 
 ---
-
-**GestionIRC v1.0**
-Instituto de Radiaciones Corpusculares - UCM
+Universidad Complutense de Madrid - Gestión IRC v4.0
+Sistema de Gestión de Instalaciones Radiactivas
 """
     
-    try:
-        with open("dist/README_USUARIO.txt", "w", encoding='utf-8') as f:
-            f.write(readme)
-        print("✅ README creado en dist/README_USUARIO.txt")
-        return True
-    except Exception as e:
-        print(f"❌ Error al crear README: {e}")
-        return False
+    with open(dist_folder / 'README.txt', 'w', encoding='utf-8') as f:
+        f.write(readme_content)
+    print("   ✓ README creado")
+    
+    print()
+    print(f"✅ Paquete de distribución creado en: {dist_folder}")
+    print()
+    print("📋 Contenido:")
+    print("   - GestionIRC.exe")
+    print("   - README.txt")
+    print("   - config/service_account.json (credenciales Google Sheets)")
+    print("   - formularios/ (templates PDF)")
+    print("   - Carpetas: data/, logs/, exports/, backups/")
 
 def main():
     """Función principal"""
     print("=" * 60)
-    print("🚀 BUILD DE EJECUTABLE - GestionIRC")
+    print("   COMPILACIÓN GESTIÓN IRC - UCM")
     print("=" * 60)
+    print()
     
-    # Verificar dependencias
-    if not verificar_dependencias():
-        print("\n❌ Faltan dependencias. Instálalas y vuelve a ejecutar.")
-        return 1
+    # 1. Limpiar builds anteriores
+    limpiar_builds_anteriores()
     
-    # Convertir logo
-    if not convertir_logo_a_ico():
-        print("\n⚠️  Advertencia: No se pudo convertir el logo")
-        print("   El ejecutable se creará sin icono personalizado")
-        respuesta = input("\n¿Continuar de todos modos? (s/n): ")
-        if respuesta.lower() != 's':
-            return 1
+    # 2. Verificar archivos necesarios
+    if not verificar_archivos_necesarios():
+        print()
+        print("❌ Compilación abortada: faltan archivos necesarios")
+        sys.exit(1)
     
-    # Generar ejecutable
-    if not build_ejecutable():
-        return 1
+    # 3. Compilar
+    if not compilar():
+        print()
+        print("❌ Compilación fallida")
+        sys.exit(1)
     
-    # Crear README
-    crear_readme_distribucion()
+    # 4. Verificar ejecutable
+    if not verificar_ejecutable():
+        print()
+        print("❌ El ejecutable no se generó correctamente")
+        sys.exit(1)
     
-    print("\n" + "=" * 60)
-    print("✅ PROCESO COMPLETADO")
+    # 5. Crear paquete de distribución
+    crear_paquete_distribucion()
+    
+    print()
     print("=" * 60)
-    print("\n📦 Archivos generados:")
-    print("   - dist/GestionIRC.exe")
-    print("   - dist/README_USUARIO.txt")
-    print("\n📝 Para distribuir:")
-    print("   1. Copia todo el contenido de dist/")
-    print("   2. Añade la carpeta credentials/")
-    print("   3. Entrega a los usuarios")
-    
-    return 0
+    print("   ✅ COMPILACIÓN COMPLETADA CON ÉXITO")
+    print("=" * 60)
+    print()
+    print("📦 El ejecutable está listo para distribuir en:")
+    print("   dist/GestionIRC_v4.0/")
+    print()
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

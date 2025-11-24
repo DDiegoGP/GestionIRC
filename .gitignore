@@ -1,9 +1,8 @@
-# Archivos compilados
+# Archivos compilados y distribución
 *.exe
 *.zip
 build/
 dist/
-*.spec
 
 # Python
 __pycache__/
@@ -17,10 +16,15 @@ logs/
 exports/
 backups/
 
-# Credenciales
-config/service_account.json
-config/token.json
+# Credenciales y configuración sensible
+config/
+*.json
+!requirements.json
+service_account.json
 credentials.json
+token.json
+app_config.json
+*.env
 
 # IDE
 .vscode/
@@ -30,7 +34,8 @@ credentials.json
 .DS_Store
 Thumbs.db
 
-service_account.json
-credentials.json
-*.envapp_config.json
-config/app_config.json
+# Permitir archivos específicos necesarios
+!Gestion_IRC.spec
+!build_exe.py
+templates/
+irc_app.spec
