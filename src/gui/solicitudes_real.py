@@ -327,13 +327,9 @@ class SolicitudesRealPanel:
                 messagebox.showerror("Error", "No se pudo extraer la información del PDF")
                 return
             
-            # El ID ya viene extraído del PDF por pdf_extractor
-            # Si no tiene ID, generar uno nuevo
-            if not solicitud.id_solicitud:
-                import uuid
-                solicitud.id_solicitud = f"IRC-Sol-{uuid.uuid4().hex[:7]}"
-            
-            solicitud.fecha_solicitud = datetime.now()
+            # Solo asignar fecha actual si no se extrajo del PDF
+            #if not solicitud.fecha_solicitud:
+            #    solicitud.fecha_solicitud = datetime.now()
             
             # Calcular coste
             solicitud.calcular_coste(TARIFAS_SERVICIOS)

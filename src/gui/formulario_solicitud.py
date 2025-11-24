@@ -146,8 +146,11 @@ class FormularioSolicitud:
         tk.Label(row, text="Fecha Solicitud:", bg=self.theme.COLORS['card_bg'],
                 fg=self.theme.COLORS['text_primary'], width=20, anchor=tk.W).pack(side=tk.LEFT)
         
-        fecha_text = datetime.now().strftime("%d/%m/%Y %H:%M") if not self.es_edicion else \
-                     self.solicitud.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+        # Mostrar fecha del PDF si existe, sino fecha actual
+        if self.solicitud and self.solicitud.fecha_solicitud:
+            fecha_text = self.solicitud.fecha_solicitud.strftime("%d/%m/%Y %H:%M")
+        else:
+            fecha_text = datetime.now().strftime("%d/%m/%Y %H:%M")
         fecha_label = tk.Label(row, text=fecha_text,
                              bg=self.theme.COLORS['bg_secondary'],
                              fg=self.theme.COLORS['text_primary'], anchor=tk.W)
